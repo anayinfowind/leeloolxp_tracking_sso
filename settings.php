@@ -26,8 +26,17 @@ defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
 
-    $settings->add(new admin_setting_configtext('leeloolxp_tracking_sso/leeloolxp_license', get_string('leeloolxp_license', 'auth_leeloolxp_tracking_sso'), get_string('leeloolxp_license', 'auth_leeloolxp_tracking_sso'), 0));
+    $settings->add(new admin_setting_configtext(
+        'leeloolxp_tracking_sso/leeloolxp_license',
+        get_string('leeloolxp_license', 'auth_leeloolxp_tracking_sso'),
+        get_string('leeloolxp_license', 'auth_leeloolxp_tracking_sso'),
+        0
+    ));
 
-    $settings->add(new admin_setting_configcheckbox('leeloolxp_tracking_sso/sso_required_admin_approval_student',get_string('sso_required_admin_approval_student_label', 'auth_leeloolxp_tracking_sso'), get_string('sso_required_admin_approval_student_desc', 'auth_leeloolxp_tracking_sso'), 1));
-
+    $settings->add(new admin_setting_configcheckbox(
+        'leeloolxp_tracking_sso/sso_required_admin_approval_student',
+        get_string('sso_required_admin_approval_student_label', 'auth_leeloolxp_tracking_sso'),
+        get_string('sso_required_admin_approval_student_desc', 'auth_leeloolxp_tracking_sso'),
+        1
+    ));
 }

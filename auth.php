@@ -25,60 +25,62 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir.'/authlib.php');
+require_once($CFG->libdir . '/authlib.php');
 
 /**
  * Plugin to sync users to LeelooLXP account of the Moodle Admin
  */
-class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base {
-	
-	/**
+class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
+{
+
+    /**
      * Constructor
      */
-    function __construct() { 
-		$this->authtype = 'leeloolxp_tracking_sso';
-		$this->config = get_config('leeloolxp_tracking_sso');
-	}
+    public function __construct()
+    {
+        $this->authtype = 'leeloolxp_tracking_sso';
+        $this->config = get_config('leeloolxp_tracking_sso');
+    }
 
-	/**
+    /**
      * Check if user authenticated
+     * 
+     * @param string $user The userdata
+     * @param string $username The username
+     * @param string $password The password
+     * @return bool Return true
      */
-	function user_authenticated_hook(&$user, $username, $password){
-		global $CFG;
-		global $PAGE;
-		global $DB;
-		$plugin_url =  $CFG->wwwroot."/auth/leeloolxp_tracking_sso/";
+    public function user_authenticated_hook(&$user, $username, $password)
+    {
 
-		$username = $username;
-		$password = $password;
-		$user_email = $user->email;
+        $username = $username;
+        $password = $password;
+        $useremail = $user->email;
 
-		$user_fullname =  ucfirst($user->firstname)." ".ucfirst($user->lastname);
+        $leeloolxplicense = $this->config->leeloolxp_license;
 
-		$leeloolxp_license = $this->config->leeloolxp_license;
+        $postdata = '&license_key=' . $leeloolxplicense;
+        $ch = curl_init();
+        $url = 'https://leeloolxp.com/api_moodle.php/?action=page_info';
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_POST, count($postdata));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
 
-		$postData = '&license_key='.$leeloolxp_license;
-		$ch = curl_init();  
- 		$url = 'https://leeloolxp.com/api_moodle.php/?action=page_info';
-	    curl_setopt($ch,CURLOPT_URL,$url);
-	    curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-	    curl_setopt($ch,CURLOPT_HEADER, false); 
-	    curl_setopt($ch, CURLOPT_POST, count($postData));
-	    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);  
+        $output = curl_exec($ch);
+        curl_close($ch);
+        $infoleeloolxp = json_decode($output);
 
-	    $output = curl_exec($ch);
-	 	curl_close($ch);
-		$info_leeloolxp  = json_decode($output);
-		
-		if($info_leeloolxp->status!='false') {
-	   	   $leeloolxp_url = $info_leeloolxp->data->install_url; 
-	    } else {
-	    	return true;
-	    }
+        if ($infoleeloolxp->status != 'false') {
+            $leeloolxpurl = $infoleeloolxp->data->install_url;
+        } else {
+            return true;
+        }
 
-	    $lastlogin = date('Y-m-d h:i:s',$user->lastlogin);
-        $fullname = ucfirst($user->firstname)." ".ucfirst($user->middlename)." ".ucfirst($user->lastname);
-        $city =  $user->city;
+        $lastlogin = date('Y-m-d h:i:s', $user->lastlogin);
+        $fullname = ucfirst($user->firstname) . " " . ucfirst($user->middlename) . " " . ucfirst($user->lastname);
+        $city = $user->city;
         $country = $user->country;
         $timezone = $user->timezone;
         $skype = $user->skype;
@@ -86,89 +88,162 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base {
         $institution = $user->institution;
         $department = $user->department;
         $phone = $user->phone1;
-        $moodle_phone = $user->phone2;
+        $moodlephone = $user->phone2;
         $adress = $user->adress;
         $firstaccess = $user->firstaccess;
         $lastaccess = $user->lastaccess;
         $lastlogin = $lastlogin;
         $lastip = $user->lastip;
-        
+
         $description = $user->description;
-        $description_of_pic = $user->imagealt;
+        $descriptionofpic = $user->imagealt;
         $alternatename = $user->alternatename;
-        $web_page = $user->url;
-        $img_url =  new moodle_url('/user/pix.php/'.$user->id.'/f1.jpg');
-        
-	    $user_exist_on_leeloolxp = $this->syncuser($username,$user_email,$password,$user_fullname,$leeloolxp_url,$fullname,$city,$country,$timezone,$skype,$idnumber,$institution,$department,$phone,$moodle_phone,$adress,$firstaccess,$lastaccess,$lastlogin,$lastip,$description,$description_of_pic, $alternatename,$web_page,$img_url);
+        $webpage = $user->url;
+        $imgurl = new moodle_url('/user/pix.php/' . $user->id . '/f1.jpg');
 
-		return true;
-	}
+        $this->syncuser(
+            $username,
+            $useremail,
+            $password,
+            $leeloolxpurl,
+            $fullname,
+            $city,
+            $country,
+            $timezone,
+            $skype,
+            $idnumber,
+            $institution,
+            $department,
+            $phone,
+            $moodlephone,
+            $adress,
+            $firstaccess,
+            $lastaccess,
+            $lastlogin,
+            $lastip,
+            $description,
+            $descriptionofpic,
+            $alternatename,
+            $webpage,
+            $imgurl
+        );
 
-	/**
+        return true;
+    }
+
+    /**
      * Returns false if the user exists and the password is wrong.
      *
      * @param string $username is username
      * @param string $password is password
      * @return bool Authentication success or failure.
      */
-    function user_login($username, $password) {
-		return false;
-	}
+    public function user_login($username, $password)
+    {
+        return false;
+    }
 
-	/**
+    /**
      * Sync user to LeelooLXP with his details.
+     * 
+     * @param string $username The username
+     * @param string $email The email
+     * @param string $password The password
+     * @param string $leeloolxpurl The leeloolxpurl
+     * @param string $fullname The fullname
+     * @param string $city The city
+     * @param string $country The country
+     * @param string $timezone The timezone
+     * @param string $skype The skype
+     * @param string $idnumber The idnumber
+     * @param string $institution The institution
+     * @param string $department The department
+     * @param string $phone The phone
+     * @param string $moodlephone The moodlephone
+     * @param string $adress The adress
+     * @param string $firstaccess The firstaccess
+     * @param string $lastaccess The lastaccess
+     * @param string $lastlogin The lastlogin
+     * @param string $lastip The lastip
+     * @param string $description The description
+     * @param string $descriptionofpic The description for pic
+     * @param string $alternatename The alternatename
+     * @param string $webpage The webpage
+     * @param string $imgurl The imgurl
+     * @return string Sync Status from leeloo.
      */
-    function syncuser( $username,$email,$password,$user_fullname,$leeloolxp_url,$fullname,$city,$country,$timezone,$skype,$idnumber,$institution,$department,$phone,$moodle_phone,$adress,$firstaccess,$lastaccess,$lastlogin,$lastip,$description,$description_of_pic, $alternatename,$web_page,$img_url) {
-		global $DB;
-		
-		$user_approval = $this->config->sso_required_admin_approval_student;
+    public function syncuser(
+        $username,
+        $email,
+        $password,
+        $leeloolxpurl,
+        $fullname,
+        $city,
+        $country,
+        $timezone,
+        $skype,
+        $idnumber,
+        $institution,
+        $department,
+        $phone,
+        $moodlephone,
+        $adress,
+        $firstaccess,
+        $lastaccess,
+        $lastlogin,
+        $lastip,
+        $description,
+        $descriptionofpic,
+        $alternatename,
+        $webpage,
+        $imgurl
+    ) {
 
-		$data = array(
-			'username' => $username,
-			'email' => $email,
-			'password' => $password,
-			'user_fullname' => $fullname,
-			'user_approval' => $user_approval,
-			'lastlogin' => $lastlogin,
-			'city' => $city,
-			'country' => $country,
-			'timezone' => $timezone,
-			'skype' => $skype,
-			'idnumber' => $idnumber,
-			'institution' => $institution,
-			'department' => $department,
-			'phone' => $phone,
-			'moodle_phone' => $moodle_phone,
-			'adress' => $adress,
-			'firstaccess' => $firstaccess,
-			'lastaccess' => $lastaccess,
-			'lastlogin' => $lastlogin,
-			'lastip' => $lastip,
-			'user_description' => $description,
-			'picture_description' => $description_of_pic,
-			'alternate_name' => $alternate_name,
-			'web_page' => $web_page,
+        $userapproval = $this->config->sso_required_admin_approval_student;
 
-		);
-		
-		$payload = json_encode($data);
+        $data = array(
+            'username' => $username,
+            'email' => $email,
+            'password' => $password,
+            'user_fullname' => $fullname,
+            'user_approval' => $userapproval,
+            'lastlogin' => $lastlogin,
+            'city' => $city,
+            'country' => $country,
+            'timezone' => $timezone,
+            'skype' => $skype,
+            'idnumber' => $idnumber,
+            'institution' => $institution,
+            'department' => $department,
+            'phone' => $phone,
+            'moodle_phone' => $moodlephone,
+            'adress' => $adress,
+            'firstaccess' => $firstaccess,
+            'lastaccess' => $lastaccess,
+            'lastlogin' => $lastlogin,
+            'lastip' => $lastip,
+            'user_description' => $description,
+            'picture_description' => $descriptionofpic,
+            'alternate_name' => $alternatename,
+            'web_page' => $webpage,
 
-		$url = $leeloolxp_url.'/admin/sync_moodle_course/sync_user_password_moodle';
+        );
 
-		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, array("data"=>$payload,'img_url' => $img_url));
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
+        $payload = json_encode($data);
 
-		$output = curl_exec($ch);
-		if(curl_getinfo($ch, CURLINFO_HTTP_CODE) !== 200) {
-			var_dump($output);
+        $url = $leeloolxpurl . '/admin/sync_moodle_course/sync_user_password_moodle';
 
-		}
-                                
-		curl_close($ch);
-		return $output;
-	}
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, array("data" => $payload, 'img_url' => $imgurl));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
+        $output = curl_exec($ch);
+        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) !== 200) {
+            var_dump($output);
+        }
+
+        curl_close($ch);
+        return $output;
+    }
 }
-?>
