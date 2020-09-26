@@ -26,6 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/authlib.php');
+require_once($CFG->dirroot . '/lib/filelib.php');
 
 /**
  * Plugin to sync users to LeelooLXP account of the Moodle Admin
@@ -39,7 +40,21 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
     public function __construct()
     {
         $this->authtype = 'leeloolxp_tracking_sso';
-        $this->config = get_config('leeloolxp_tracking_sso');
+        $this->config = get_config('auth_leeloolxp_tracking_sso');
+    }
+
+    /**
+     * Encrypt Strings
+     * 
+     * @param string $textToEncrypt The text to Encrypt
+     * @return bool Return Encrypted String
+     */
+    function encrption_data($textToEncrypt)
+    {
+
+        $encryptionMethod = "AES-256-CBC";
+        $secretHash = "25c6c7ff35b9979b151f2136cd13b0ff";
+        return @openssl_encrypt($textToEncrypt, $encryptionMethod, $secretHash);
     }
 
     /**
@@ -57,19 +72,23 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
         $password = $password;
         $useremail = $user->email;
 
-        $leeloolxplicense = $this->config->leeloolxp_license;
+        $leeloolxplicense = $this->config->license;
 
-        $postdata = '&license_key=' . $leeloolxplicense;
-        $ch = curl_init();
         $url = 'https://leeloolxp.com/api_moodle.php/?action=page_info';
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_POST, count($postdata));
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
+        $postdata = '&license_key=' . $leeloolxplicense;
 
-        $output = curl_exec($ch);
-        curl_close($ch);
+        $curl = new curl;
+
+        $options = array(
+            'CURLOPT_RETURNTRANSFER' => true,
+            'CURLOPT_HEADER' => false,
+            'CURLOPT_POST' => count($postdata)
+        );
+
+        if (!$output = $curl->post($url, $postdata, $options)) {
+            return true;
+        }
+
         $infoleeloolxp = json_decode($output);
 
         if ($infoleeloolxp->status != 'false') {
@@ -79,7 +98,7 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
         }
 
         $lastlogin = date('Y-m-d h:i:s', $user->lastlogin);
-        $fullname = ucfirst($user->firstname) . " " . ucfirst($user->middlename) . " " . ucfirst($user->lastname);
+        $fullname = fullname($user);
         $city = $user->city;
         $country = $user->country;
         $timezone = $user->timezone;
@@ -202,9 +221,9 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
         $userapproval = $this->config->sso_required_admin_approval_student;
 
         $data = array(
-            'username' => $username,
-            'email' => $email,
-            'password' => $password,
+            'username' => $this->encrption_data($username),
+            'email' => $this->encrption_data($email),
+            'password' => $this->encrption_data($password),
             'user_fullname' => $fullname,
             'user_approval' => $userapproval,
             'lastlogin' => $lastlogin,
@@ -231,19 +250,24 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
 
         $payload = json_encode($data);
 
-        $url = $leeloolxpurl . '/admin/sync_moodle_course/sync_user_password_moodle';
+        $postdata = array();
+        $postdata['data'] = $payload;
+        $postdata['img_url'] = $imgurl;
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, array("data" => $payload, 'img_url' => $imgurl));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $url = $leeloolxpurl . '/admin/sync_moodle_course/sync_user_password_moodle_encrypt';
 
-        $output = curl_exec($ch);
-        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) !== 200) {
-            var_dump($output);
+        $curl = new curl;
+
+        $options = array(
+            'CURLOPT_RETURNTRANSFER' => 1,
+            'CURLOPT_HEADER' => false,
+            'CURLOPT_POST' => 1
+        );
+
+        if (!$output = $curl->post($url, $postdata, $options)) {
+            return true;
         }
 
-        curl_close($ch);
         return $output;
     }
 }

@@ -26,7 +26,7 @@
 $string['auth_leeloolxp_tracking_ssodescription'] = '<p>Sync users to your Leeloo LXP install automatically so users can use SSO.</p>';
 $string['auth_leeloolxp_tracking_ssosettings'] = 'Settings';
 $string['pluginname'] = 'Leeloo LXP SSO';
-$string['leeloolxp_license'] = 'Leeloo LXP License ID';
+$string['license'] = 'Leeloo LXP License ID';
 $string['sso_required_admin_approval_student_label'] = 'Require administrator approval';
 $string['sso_required_admin_approval_student_desc'] = 'The new student requires manual approval on Leeloo LXP to activate the account.';
 
