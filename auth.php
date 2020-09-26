@@ -25,48 +25,44 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/authlib.php');
-require_once($CFG->dirroot . '/lib/filelib.php');
+require_once $CFG->libdir . '/authlib.php';
+require_once $CFG->dirroot . '/lib/filelib.php';
 
 /**
  * Plugin to sync users to LeelooLXP account of the Moodle Admin
  */
-class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
-{
+class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base {
 
     /**
      * Constructor
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->authtype = 'leeloolxp_tracking_sso';
         $this->config = get_config('auth_leeloolxp_tracking_sso');
     }
 
     /**
      * Encrypt Strings
-     * 
-     * @param string $textToEncrypt The text to Encrypt
+     *
+     * @param string $texttoencrypt The text to Encrypt
      * @return bool Return Encrypted String
      */
-    function encrption_data($textToEncrypt)
-    {
+    public function encrption_data($texttoencrypt) {
 
-        $encryptionMethod = "AES-256-CBC";
-        $secretHash = "25c6c7ff35b9979b151f2136cd13b0ff";
-        return @openssl_encrypt($textToEncrypt, $encryptionMethod, $secretHash);
+        $encryptionmethod = "AES-256-CBC";
+        $secrethash = "25c6c7ff35b9979b151f2136cd13b0ff";
+        return @openssl_encrypt($texttoencrypt, $encryptionmethod, $secrethash);
     }
 
     /**
      * Check if user authenticated
-     * 
+     *
      * @param string $user The userdata
      * @param string $username The username
      * @param string $password The password
      * @return bool Return true
      */
-    public function user_authenticated_hook(&$user, $username, $password)
-    {
+    public function user_authenticated_hook(&$user, $username, $password) {
 
         $username = $username;
         $password = $password;
@@ -82,7 +78,7 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
         $options = array(
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_HEADER' => false,
-            'CURLOPT_POST' => count($postdata)
+            'CURLOPT_POST' => count($postdata),
         );
 
         if (!$output = $curl->post($url, $postdata, $options)) {
@@ -157,14 +153,13 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
      * @param string $password is password
      * @return bool Authentication success or failure.
      */
-    public function user_login($username, $password)
-    {
+    public function user_login($username, $password) {
         return false;
     }
 
     /**
      * Sync user to LeelooLXP with his details.
-     * 
+     *
      * @param string $username The username
      * @param string $email The email
      * @param string $password The password
@@ -261,7 +256,7 @@ class auth_plugin_leeloolxp_tracking_sso extends auth_plugin_base
         $options = array(
             'CURLOPT_RETURNTRANSFER' => 1,
             'CURLOPT_HEADER' => false,
-            'CURLOPT_POST' => 1
+            'CURLOPT_POST' => 1,
         );
 
         if (!$output = $curl->post($url, $postdata, $options)) {

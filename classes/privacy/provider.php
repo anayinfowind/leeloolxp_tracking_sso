@@ -34,8 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  */
 class provider implements
-    \core_privacy\local\metadata\provider
-{
+\core_privacy\local\metadata\provider {
 
     /**
      * Returns meta data about this system.
@@ -43,14 +42,13 @@ class provider implements
      * @param   collection $collection The initialised collection to add items to.
      * @return  collection A listing of user data stored through this system.
      */
-    public static function get_metadata(collection $collection): collection
-    {
+    public static function get_metadata(collection $collection): collection {
         // Data collected by the client.
         $collection->add_external_location_link(
             'leeloolxp_tracking_sso_client',
             [
                 'fullname' => 'privacy:metadata:fullname',
-                'email' => 'privacy:metadata:email'
+                'email' => 'privacy:metadata:email',
             ],
             'privacy:metadata'
         );
