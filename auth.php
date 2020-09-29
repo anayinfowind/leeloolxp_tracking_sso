@@ -25,8 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once ($CFG->libdir . '/authlib.php');
-require_once ($CFG->dirroot . '/lib/filelib.php');
+require_once($CFG->libdir . '/authlib.php');
+require_once($CFG->dirroot . '/lib/filelib.php');
 
 /**
  * Plugin to sync users to LeelooLXP account of the Moodle Admin
