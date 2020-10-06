@@ -17,7 +17,7 @@
 /**
  * Main functions of the plugin.
  *
- * @package local_leeloolxp_web_login_tracking
+ * @package auth_leeloolxp_tracking_sso
  * @author Leeloo LXP <info@leeloolxp.com>
  * @copyright  2020 Leeloo LXP (https://leeloolxp.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
